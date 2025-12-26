@@ -1465,6 +1465,131 @@ VALUES ({pick_product_id()}, {pick_user_id()}, 5, {q("It''s the best product I''
     lambda: f"""SELECT * FROM orders WHERE order_id = 1 AND user_id = 1 ORDER BY order_date LIMIT 10;""",
     
     lambda: f"""SELECT * FROM users WHERE user_id = 1 OR user_id = 2 OR user_id = 3 LIMIT 3;""",
+    
+    # === ENHANCED HARD NEGATIVES FOR ATTACK SIGNATURE GENERALIZATION ===
+    
+    # Legitimate UNION queries (same column count, same types - NOT attacks)
+    lambda: f"""SELECT first_name, last_name FROM users
+UNION SELECT vendor_name, contact_email FROM vendors
+ORDER BY first_name LIMIT {limit()};""",
+    
+    lambda: f"""SELECT product_id, name FROM products WHERE is_active = 1
+UNION ALL SELECT product_id, name FROM products WHERE stock_quantity = 0
+ORDER BY product_id LIMIT {limit()};""",
+    
+    lambda: f"""SELECT email FROM users WHERE country_code = 'US'
+UNION SELECT email FROM users WHERE country_code = 'GB'
+ORDER BY email LIMIT {limit()};""",
+    
+    lambda: f"""SELECT category_name FROM categories WHERE parent_category_id IS NULL
+UNION SELECT category_name FROM categories WHERE is_active = 1
+ORDER BY category_name;""",
+    
+    # Legitimate SQL comments in code/stored procedures (NOT injection)
+    lambda: f"""SELECT * FROM users 
+-- Filter by active users only
+WHERE status = 'active' 
+ORDER BY created_at DESC LIMIT {limit()};""",
+    
+    lambda: f"""SELECT product_id, name, price FROM products
+/* Get products in specific price range */
+WHERE price BETWEEN 10.00 AND 100.00
+ORDER BY price;""",
+    
+    lambda: f"""SELECT o.order_id, o.total_amount
+-- Join with users to get customer info
+FROM orders o
+JOIN users u ON o.user_id = u.user_id
+WHERE o.status = 'paid' LIMIT {limit()};""",
+    
+    # Strings with SQL escape sequences (legitimate, not attacks)
+    lambda: f"""SELECT * FROM users WHERE bio LIKE '%don''t%';""",
+    lambda: f"""SELECT * FROM products WHERE description LIKE '%it''s great%';""",
+    lambda: f"""INSERT INTO reviews (text) VALUES ('Can''t believe how good this is!');""",
+    
+    # Legitimate percentage/wildcard patterns  
+    lambda: f"""SELECT * FROM products WHERE name LIKE '%25%off%';""",
+    lambda: f"""SELECT * FROM coupons WHERE coupon_code LIKE 'SAVE%';""",
+    lambda: f"""SELECT * FROM users WHERE email LIKE '%@gmail.com';""",
+    
+    # Complex boolean logic (legitimate filtering, not tautologies)
+    lambda: f"""SELECT * FROM products 
+WHERE (category_id = 1 AND is_active = 1) 
+   OR (category_id = 2 AND stock_quantity > 0)
+   OR (price < 10.00 AND vendor_id = {pick_vendor_id()});""",
+    
+    lambda: f"""SELECT * FROM orders
+WHERE (status = 'pending' AND total_amount > 100)
+   OR (status = 'processing' AND order_date > '2024-01-01')
+   OR (user_id = {pick_user_id()} AND status = 'paid');""",
+    
+    # Legitimate numeric comparisons that aren't tautologies
+    lambda: f"""SELECT * FROM products WHERE 1 = 1 AND price > 50.00;""",  # 1=1 is common boilerplate
+    lambda: f"""SELECT * FROM users WHERE 1 = 1 AND status = 'active' ORDER BY user_id;""",
+    lambda: f"""SELECT * FROM orders WHERE 1 = 0 OR total_amount > 1000;""",  # OR with real condition
+    
+    # Sleep/delay function names in legitimate data
+    lambda: f"""SELECT * FROM products WHERE name = 'Sleep Mask Pro';""",
+    lambda: f"""SELECT * FROM products WHERE category_id IN (SELECT category_id FROM categories WHERE category_name = 'Sleep & Relaxation');""",
+    lambda: f"""INSERT INTO categories (category_name) VALUES ('Sleep Accessories');""",
+    
+    # Benchmark/performance test queries (legitimate admin queries)
+    lambda: f"""SELECT COUNT(*) FROM users; -- benchmark query""",
+    lambda: f"""SELECT SQL_NO_CACHE * FROM products LIMIT 100; -- performance test""",
+    
+    # Hash/version check in legitimate contexts
+    lambda: f"""SELECT * FROM settings WHERE setting_name = 'db_version';""",
+    lambda: f"""SELECT * FROM audit_logs WHERE action = 'version_check';""",
+    lambda: f"""INSERT INTO system_info (key, value) VALUES ('app_version', '1.0.0');""",
+]
+
+# =============================================================================
+# BENIGN NOISE PATTERNS (non-SQL inputs that should be classified as benign)
+# These teach the model to recognize attack signatures, not just "is SQL"
+# =============================================================================
+
+BENIGN_NOISE_PATTERNS = [
+    # SQL keywords in isolation (legitimate input, not attacks)
+    lambda: random.choice(["SELECT", "FROM", "WHERE", "ORDER BY", "LIMIT", "AND", "OR", "INSERT", "UPDATE", "DELETE", "JOIN", "GROUP BY", "HAVING", "DISTINCT"]),
+    
+    # Common text fragments that might appear in user input
+    lambda: random.choice(["hello", "test", "admin", "user", "search", "query", "login", "password", "email", "name"]),
+    
+    # Numbers and IDs (very common benign input)
+    lambda: str(random.randint(1, 999999)),
+    lambda: f"{random.randint(10000000, 99999999)}{random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ')}",
+    
+    # Special characters that appear in legitimate data but not as attacks
+    lambda: random.choice(["@", "&", "%", "*", "#", "()", "[]", "{}", "|", "^"]),
+    
+    # Simple expressions that aren't SQL
+    lambda: f"{random.randint(1, 100)} + {random.randint(1, 100)}",
+    lambda: f"{random.randint(1, 100)} - {random.randint(1, 100)}",
+    lambda: f"{random.randint(1, 100)} * {random.randint(1, 100)}",
+    
+    # Email addresses (benign user data)
+    lambda: f"{random.choice(['john', 'jane', 'admin', 'user', 'test'])}@{random.choice(['gmail.com', 'yahoo.com', 'outlook.com', 'company.org'])}",
+    
+    # Phone-like numbers
+    lambda: f"+{random.randint(1, 99)}{random.randint(100000000, 999999999)}",
+    
+    # Date-like strings
+    lambda: f"{random.randint(2020, 2025)}-{random.randint(1, 12):02d}-{random.randint(1, 28):02d}",
+    
+    # URL fragments (benign)
+    lambda: f"/{random.choice(['users', 'products', 'orders', 'api', 'v1', 'v2'])}/{random.randint(1, 9999)}",
+    
+    # JSON-like strings (benign data)
+    lambda: f'{{"id": {random.randint(1, 1000)}, "name": "test"}}',
+    
+    # Empty or minimal valid inputs
+    lambda: "",
+    lambda: " ",
+    lambda: "null",
+    lambda: "NULL",
+    lambda: "undefined",
+    lambda: "true",
+    lambda: "false",
 ]
 
 def inject_sqli(query: str) -> str:
@@ -1588,35 +1713,124 @@ def apply_random_obfuscation(payload: str) -> str:
     return random.choice(obfuscation_funcs)(payload)
 
 def generate_one_benign() -> str:
-    """Generate a single benign SQL query.
+    """Generate a single benign sample.
     
-    Includes hard negative templates (queries that look suspicious but are safe)
-    to reduce trivial separability in ML training.
+    Distribution (for attack signature generalization):
+    - 65% normal SQL queries (SELECT, INSERT, UPDATE)
+    - 20% hard negatives (SQL that looks suspicious but is safe)
+    - 10% benign noise (non-SQL inputs that should NOT trigger detection)
+    - 5% other SQL (remaining quota)
     """
     r = random.random()
-    if r < 0.75:  # 75% normal SELECT queries
-        return random.choice(select_t)()
-    elif r < 0.82:  # 7% INSERT queries
-        return random.choice(insert_t)()
-    elif r < 0.87:  # 5% UPDATE queries
-        return random.choice(update_t)()
-    else:  # 13% hard negatives (queries that look suspicious but are benign)
+    
+    if r < 0.60:
+        # Standard SQL queries
+        inner = random.random()
+        if inner < 0.85:  # SELECT dominant
+            return random.choice(select_t)()
+        elif inner < 0.93:
+            return random.choice(insert_t)()
+        else:
+            return random.choice(update_t)()
+    
+    elif r < 0.80:
+        # Hard negatives (queries that look suspicious but are benign)
+        # Crucial for reducing false positives on legitimate OR/UNION/comments
         return random.choice(HARD_NEGATIVE_TEMPLATES)()
+    
+    elif r < 0.90:
+        # Benign noise patterns (non-SQL inputs)
+        # Teaches model to recognize attack SIGNATURES, not just "is SQL"
+        return random.choice(BENIGN_NOISE_PATTERNS)()
+    
+    else:
+        # Remaining SQL variety
+        return random.choice(select_t)()
 
 def generate_one_malicious() -> str:
-    """Generate a benign query and inject SQLi payload.
+    """Generate a malicious sample in various contexts for better model generalization.
     
-    Uses realistic injection points (user-controlled fields) and
-    may apply additional obfuscation.
+    Contexts:
+    - full_query (50%): Inject payload into a benign query (current behavior)
+    - standalone (20%): Raw payload only (teaches raw attack pattern recognition)
+    - fragment (15%): Injection fragment like it would appear in user input
+    - encoded (15%): URL-encoded version of payload
     """
-    benign = generate_one_benign()
-    malicious = inject_sqli(benign)
+    payload = pick_sqli_payload()
+    r = random.random()
     
-    # 30% chance to apply additional random obfuscation
-    if random.random() < 0.30:
-        malicious = apply_random_obfuscation(malicious)
+    if r < 0.50:
+        # Full query injection (original behavior)
+        benign = generate_one_benign()
+        malicious = inject_sqli(benign)
+        # 30% chance to apply additional random obfuscation
+        if random.random() < 0.30:
+            malicious = apply_random_obfuscation(malicious)
+        return malicious
     
-    return malicious
+    elif r < 0.70:
+        # Standalone payload - raw attack pattern
+        # May apply random obfuscation
+        if random.random() < 0.30:
+            payload = apply_random_obfuscation(payload)
+        return payload
+    
+    elif r < 0.85:
+        # Fragment context - simulates user input field values
+        # These are what WAFs typically receive before query construction
+        fragment_styles = [
+            lambda p: p,  # Raw payload as-is
+            lambda p: f"'{p}",  # Single quote prefix
+            lambda p: f"\"{p}",  # Double quote prefix  
+            lambda p: f"1{p}",  # Numeric prefix
+            lambda p: f"admin{p}",  # Username-like prefix
+            lambda p: f"test@email.com{p}",  # Email-like prefix
+            lambda p: f"search_query{p}",  # Search term prefix
+        ]
+        return random.choice(fragment_styles)(payload)
+    
+    else:
+        # URL-encoded context - common in web requests
+        encoded = url_encode_payload(payload)
+        # Sometimes double-encode for evasion
+        if random.random() < 0.20:
+            encoded = url_encode_payload(encoded)
+        return encoded
+
+
+def url_encode_payload(payload: str) -> str:
+    """URL-encode a payload with varying levels of encoding.
+    
+    Randomly encodes some characters to simulate real-world evasion techniques.
+    """
+    # Characters to potentially encode
+    encode_map = {
+        ' ': '%20',
+        "'": '%27',
+        '"': '%22',
+        '=': '%3D',
+        '<': '%3C',
+        '>': '%3E',
+        '#': '%23',
+        ';': '%3B',
+        '/': '%2F',
+        '\\': '%5C',
+        '-': '%2D',
+        '(': '%28',
+        ')': '%29',
+        '*': '%2A',
+        '+': '%2B',
+    }
+    
+    result = []
+    for c in payload:
+        # 50% chance to encode if character is in encode_map
+        if c in encode_map and random.random() < 0.50:
+            result.append(encode_map[c])
+        else:
+            result.append(c)
+    
+    return ''.join(result)
 
 def generate_queries(mode: str, count: int) -> list:
     """Generate queries based on mode (benign or malicious)."""
