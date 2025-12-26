@@ -9,24 +9,29 @@ This project implements an end-to-end pipeline for detecting SQL injection attac
 ### Key Features
 
 - **Synthetic Query Generator**: Produces millions of diverse benign and malicious SQL queries
+- **Multi-Context Attack Generation**: Generates payloads as standalone, fragments, URL-encoded, and injected in queries
 - **Automated Dataset Splitting**: 80/10/10 train/test/validation splits with unique random seeds
 - **Multi-Generation Training**: Track model evolution across training iterations
 - **Comprehensive Evaluation**: Category-level analysis, confusion matrices, and false positive/negative tracking
-- **Zero False Negative Design**: Prioritizes catching all attacks (100% recall)
 
 ## 📊 Model Performance
 
-### Generation Comparison
+### Generation Comparison (Evaluated on external dataset)
 
-| Metric | Gen 1 | Gen 2 | Gen 3 |
-|--------|-------|-------|-------|
-| **Accuracy** | 60.31% | 82.12% | 83.69% |
-| **Precision** | 55.41% | 73.39% | 75.15% |
-| **Recall** | 100% | 100% | 100% |
-| **F1 Score** | 71.31% | 84.65% | 85.81% |
-| **ROC-AUC** | 0.9946 | 0.9973 | 0.9975 |
+| Metric | Gen 1 | Gen 2 | Gen 3 | Gen 4 |
+|--------|-------|-------|-------|-------|
+| **Accuracy** | 38.99% | 52.80% | 63.29% | 67.04% |
+| **Precision** | 37.63% | 43.82% | 50.07% | 60.27% |
+| **Recall** | 99.96% | 99.98% | 99.97% | 30.67% |
+| **F1 Score** | 54.67% | 60.93% | 66.73% | 40.65% |
+| **ROC-AUC** | 0.528 | 0.897 | 0.938 | 0.716 |
 
-> **Note**: 100% recall means zero false negatives — no malicious query escapes detection.
+### Analysis
+
+- **Gen 1-3**: High recall (99.9%+) but lower precision. Models flag almost everything as malicious.
+- **Gen 4**: Higher precision (60.27%) with attack signature-focused training. Lower recall due to stricter attack pattern recognition.
+
+> **Note**: Gen 4 was trained with enhanced attack signature detection, which improves precision but reduces recall on edge cases (single keywords, unusual patterns).
 
 ## 🗂️ Project Structure
 
@@ -40,19 +45,14 @@ sql_query_generator/
 │   │   └── malicious.txt         # 80% training malicious queries
 │   ├── test/
 │   │   ├── benign.txt            # 10% test benign queries
-│   │   ├── malicious.txt         # 10% test malicious queries
-│   │   └── evaluation_set.csv    # Hand-crafted evaluation dataset
+│   │   └── malicious.txt         # 10% test malicious queries
 │   └── val/
 │       ├── benign.txt            # 10% validation benign queries
 │       └── malicious.txt         # 10% validation malicious queries
-├── generations/
-│   ├── 1st_train_session/        # First generation model/vectorizer
-│   ├── 2nd_train_session/        # Second generation model/vectorizer
-│   └── 3rd_train_session/        # Third generation model/vectorizer
+├── generations/                   # Trained model generations
 ├── evaluations/                   # Evaluation results and comparisons
 ├── train_sqli_detector.ipynb     # Model training notebook
-├── evaluate_models.ipynb          # Multi-generation evaluation notebook
-└── README.md
+└── evaluate_models.ipynb          # Multi-generation evaluation notebook
 ```
 
 ## 🚀 Quick Start
@@ -65,153 +65,94 @@ pip install scikit-learn pandas numpy matplotlib seaborn joblib
 
 ### Generate Training Data
 
-Generate a dataset with automatic 80/10/10 train/test/val split:
-
 ```bash
-# Generate 1 million queries per class (2M total)
-python sql_query_generator/sql_query_generator.py 1000000
+# Generate 200,000 queries per class (400K total)
+python sql_query_generator/sql_query_generator.py 200000
 ```
 
-This creates:
-- **Train**: 800,000 benign + 800,000 malicious queries
-- **Test**: 100,000 benign + 100,000 malicious queries  
-- **Val**: 100,000 benign + 100,000 malicious queries
-
-### Alternative: Generate Specific Query Types
-
-```bash
-# Generate only benign queries
-python sql_query_generator.py --benign -n 50000 -o benign_queries.txt
-
-# Generate only malicious queries  
-python sql_query_generator.py --malicious -n 50000 -o malicious_queries.txt
-```
+Creates:
+- **Train**: 160,000 benign + 160,000 malicious
+- **Test**: 20,000 benign + 20,000 malicious
+- **Val**: 20,000 benign + 20,000 malicious
 
 ### Train a Model
 
-Open and run `train_sqli_detector.ipynb` to:
-1. Load training data from `dataset/train/`
-2. Fit a TF-IDF vectorizer
-3. Train a classification model
-4. Evaluate on test/validation sets
-5. Save model artifacts
+Run `train_sqli_detector.ipynb` to train and save a model.
 
 ### Evaluate Models
 
-Open and run `evaluate_models.ipynb` to:
-1. Compare multiple model generations
-2. Analyze per-category performance
-3. Identify false positives/negatives
-4. Generate visualizations
+Run `evaluate_models.ipynb` to compare generations.
 
-## 🔧 Query Generator Details
+## 🔧 Query Generator Architecture
 
-### Benign Query Categories
+### Benign Query Distribution (Gen 4)
 
-The generator produces diverse benign SQL patterns including:
+| Type | Percentage | Description |
+|------|------------|-------------|
+| Standard SQL | 60% | SELECT, INSERT, UPDATE queries |
+| Hard Negatives | 20% | Legitimate UNION, OR, comments |
+| Benign Noise | 10% | Keywords, text, emails, JSON |
+| SQL Variety | 10% | Additional patterns |
 
-| Category | Count | Examples |
-|----------|-------|----------|
-| **SELECT** | ~600+ templates | Simple queries, JOINs, subqueries |
-| **INSERT/UPDATE/DELETE** | ~50+ templates | CRUD operations |
-| **ORDER BY** | ~70 templates | Single/multi-column sorting |
-| **Aggregate Functions** | ~50+ templates | COUNT, SUM, AVG, MIN, MAX |
-| **Window Functions** | ~15 templates | ROW_NUMBER, RANK, LAG, LEAD |
-| **CTEs** | ~5 templates | WITH clause patterns |
-| **JSON Operations** | ~10 templates | JSON_EXTRACT, JSON_OBJECT |
-| **Admin Commands** | ~100+ templates | SHOW, DESCRIBE, EXPLAIN |
-| **Edge Cases** | ~50+ templates | Keywords in string literals |
+### Malicious Query Distribution (Gen 4)
 
-### Malicious Query Categories
+| Context | Percentage | Example |
+|---------|------------|---------|
+| Full query injection | 50% | `SELECT * FROM users WHERE id='1' OR 1=1--'` |
+| Standalone payload | 20% | `' UNION SELECT 1,2,3--` |
+| Fragment | 15% | `admin' OR 1=1--` |
+| URL-encoded | 15% | `%27%20OR%201=1--` |
 
-Injection patterns are generated by applying payloads to benign queries:
+### Attack Payload Categories
 
-- **UNION-based**: Data exfiltration via UNION SELECT
-- **Error-based**: Extracting data through error messages
-- **Boolean Blind**: True/false inference attacks
-- **Time-based Blind**: SLEEP/BENCHMARK delays
-- **Stacked Queries**: Multiple statement execution
-- **Comment Injection**: SQL comment exploitation
+- **Tautologies** (20%): `OR 1=1`, `OR 'a'='a'`
+- **UNION-based** (15%): Data exfiltration
+- **Comment injection** (10%): `--`, `#`, `/**/`
+- **Boolean Blind** (10%): True/false inference
+- **Time-based Blind** (8%): SLEEP/BENCHMARK
+- **Error-based** (7%): Error message extraction
+- **Stacked Queries** (5%): Multiple statements
+- **Obfuscated** (25%): Mixed case, whitespace, encoding
 
-### Query Distribution
-
-The generator maintains a balanced distribution:
-- **75%** SELECT queries (including simple queries)
-- **7%** INSERT queries
-- **5%** UPDATE queries
-- **13%** Hard negative patterns (edge cases)
-
-## 📈 Training Pipeline
+## 📈 Training Details
 
 ### Feature Extraction
 
-Uses TF-IDF vectorization with:
-- **Max Features**: 15,000 n-grams
-- **N-gram Range**: (2, 5) character n-grams
-- **Sublinear TF**: Enabled for large datasets
+- **TF-IDF Vectorization**: 15,000 character n-grams
+- **N-gram Range**: (2, 5)
+- **Sublinear TF**: Enabled
 
-### Model Architecture
+### Model
 
-The default model is a **Logistic Regression** classifier with:
-- L2 regularization
-- Balanced class weights
-- High tolerance for convergence
+- **Algorithm**: Logistic Regression
+- **Regularization**: L2
+- **Class Weights**: Balanced
 
-### Training Statistics (Gen 3)
+## 🎯 Precision vs Recall Tradeoff
 
-- **Training samples**: 1,600,000 queries
-- **Vocabulary size**: 15,000 n-grams
-- **TF-IDF fitting time**: ~8.5 minutes
-- **Model training time**: ~5 minutes
+The evaluation dataset contains patterns that represent a spectrum of "maliciousness":
 
-## 🧪 Evaluation Framework
+| Pattern Type | Gen 1-3 | Gen 4 |
+|--------------|---------|-------|
+| Clear attacks (`OR 1=1--`) | ✅ Detected | ✅ Detected |
+| Single keywords (`insert`, `select`) | ✅ Flagged | ❌ Ignored (benign) |
+| Unusual patterns (`or 3=3`) | ✅ Flagged | ❌ Ignored |
 
-### Evaluation Dataset
-
-A hand-crafted `evaluation_set.csv` containing ~510 queries across 60+ categories:
-- Real-world benign patterns
-- Known SQLi attack patterns
-- Edge cases and ambiguous queries
-
-### Metrics Tracked
-
-- **Accuracy**: Overall correct classification rate
-- **Precision**: True positives / All predicted positives
-- **Recall**: True positives / All actual positives
-- **F1 Score**: Harmonic mean of precision and recall
-- **ROC-AUC**: Area under the ROC curve
-
-### Category-Level Analysis
-
-The evaluation identifies:
-- **Best performing categories**: Usually malicious patterns (100% accuracy)
-- **Worst performing categories**: Complex JOINs, minimal queries, edge cases
-
-## 🎯 Known Limitations & Future Work
-
-### Current False Positive Hotspots
-
-| Category | Accuracy | Reason |
-|----------|----------|--------|
-| `join` | 28.57% | Complex JOIN patterns look suspicious |
-| `complex_benign` | 32.73% | Multi-feature queries trigger detection |
-| `minimal` | 36.36% | VERSION(), DATABASE() functions |
-| `edge_case` | 54.76% | Keywords in legitimate string data |
-
-### Improvement Opportunities
-
-1. **More JOIN templates**: Expand coverage of complex JOIN patterns
-2. **Meta-query patterns**: Add more database utility function examples
-3. **Contextual features**: Beyond TF-IDF (parenthesis balance, keyword positions)
-4. **Ensemble methods**: Combine multiple classifiers
+**Choose based on use case:**
+- **High Recall (Gen 1-3)**: WAF blocking all suspicious input
+- **High Precision (Gen 4)**: Reduce false positives on legitimate queries
 
 ## 📝 API Reference
 
-### Generator CLI
+### CLI Usage
 
 ```bash
-python sql_query_generator.py <total_per_class>
-python sql_query_generator.py --benign|--malicious -n <count> [-o <output_file>]
+# Generate dataset with splits
+python sql_query_generator.py 200000
+
+# Generate specific types
+python sql_query_generator.py --benign -n 50000 -o benign.txt
+python sql_query_generator.py --malicious -n 50000 -o malicious.txt
 ```
 
 ### Programmatic Usage
@@ -219,21 +160,16 @@ python sql_query_generator.py --benign|--malicious -n <count> [-o <output_file>]
 ```python
 from sql_query_generator import generate_queries, generate_one_benign, generate_one_malicious
 
-# Generate specific query types
-benign_queries = generate_queries("benign", 1000)
-malicious_queries = generate_queries("malicious", 1000)
-
-# Generate single queries
-single_benign = generate_one_benign()
-single_malicious = generate_one_malicious()
+benign = generate_queries("benign", 1000)
+malicious = generate_queries("malicious", 1000)
 ```
 
 ## 📄 License
 
-This project is provided for educational and research purposes.
+Educational and research purposes.
 
 ## 🙏 Acknowledgments
 
-- Built with scikit-learn, pandas, and matplotlib
-- Inspired by real-world SQLi attack patterns from OWASP
-- Developed through iterative improvement based on evaluation feedback
+- Built with scikit-learn, pandas, matplotlib
+- SQLi patterns inspired by OWASP
+- Developed through iterative improvement
