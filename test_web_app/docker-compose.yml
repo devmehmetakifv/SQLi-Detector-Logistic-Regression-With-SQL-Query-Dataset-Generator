@@ -1,0 +1,71 @@
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: sqli_demo_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sqli_network
+
+  # Python ML API
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: sqli_demo_api
+    volumes:
+      - ./api:/app
+    ports:
+      - "5000:5000"
+    environment:
+      FLASK_ENV: development
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - sqli_network
+
+  # PHP + Nginx Web Server
+  web:
+    build:
+      context: ./php
+      dockerfile: Dockerfile
+    container_name: sqli_demo_web
+    ports:
+      - "8080:80"
+    environment:
+      DB_HOST: mysql
+      DB_NAME: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASS: ${MYSQL_PASSWORD}
+      API_URL: http://api:5000
+    depends_on:
+      mysql:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    networks:
+      - sqli_network
+
+volumes:
+  mysql_data:
+
+networks:
+  sqli_network:
+    driver: bridge
