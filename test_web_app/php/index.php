@@ -216,15 +216,24 @@ $login_success = false;
 $user_data = null;
 $model_predictions = null;
 $executed_query = '';
+$constructed_query = '';
 $error_message = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $login_attempted = true;
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
+
+    // Build the vulnerable query string once so we can reuse it for DB and model scoring
+    $constructed_query = "SELECT * FROM users WHERE username = '$username' AND password = '$password'";
     
     // Step 1: Call ML API to analyze input
-    $api_data = json_encode(['input' => $username]);
+    $api_data = json_encode([
+        'inputs' => [
+            ['id' => 'raw_payload', 'text' => $username],
+            ['id' => 'full_query', 'text' => $constructed_query]
+        ]
+    ]);
     $ch = curl_init($api_url . '/predict');
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
@@ -252,7 +261,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         // ⚠️ INTENTIONALLY VULNERABLE QUERY - DO NOT USE IN PRODUCTION!
-        $executed_query = "SELECT * FROM users WHERE username = '$username' AND password = '$password'";
+        $executed_query = $constructed_query;
         
         $result = $conn->query($executed_query);
         
@@ -314,7 +323,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <small>
                             <code>' OR '1'='1' --</code><br>
                             <code>admin'--</code><br>
-                            <code>' UNION SELECT * FROM users --</code>
+                            <code>' UNION SELECT * FROM users --</code><br>
+                            <code>1' OR '1'='1</code><br>
+                            <code>1' OR 1=1-- -</code><br>
+                            <code>' OR 1=1#</code><br>
+                            <code>' OR 1=1/*</code><br>
+                            <code>admin' OR 'x'='x</code><br>
+                            <code>admin') OR ('1'='1</code><br>
+                            <code>test' OR '1'='1' -- -</code><br>
+                            <code>' OR SLEEP(3)--</code><br>
+                            <code>1' AND (SELECT 1 FROM dual)--</code><br>
+                            <code>1; DROP TABLE users;--</code><br>
+                            <code>%27%20OR%201%3D1--</code><br>
+                            <code>admin'/**/OR/**/'1'='1</code><br>
+                            <code>admin' UNION SELECT null,null,null--</code><br>
+                            <code>admin' UNION SELECT user(),database(),version()--</code><br>
+                            <code>') OR ('a'='a</code><br>
+                            <code>admin')) OR TRUE--</code>
                         </small>
                     </div>
                 </div>
@@ -357,15 +382,97 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                  style="width: <?= $probPercent ?>%"></div>
                                         </div>
                                     </div>
-                                <?php endforeach; ?>
-                            <?php elseif (isset($model_predictions['error'])): ?>
-                                <div class="alert alert-danger">
-                                    <i class="bi bi-exclamation-circle"></i> 
-                                    <?= htmlspecialchars($model_predictions['error']) ?>
+                            <?php endforeach; ?>
+                        <?php elseif (isset($model_predictions['error'])): ?>
+                            <div class="alert alert-danger">
+                                <i class="bi bi-exclamation-circle"></i> 
+                                <?= htmlspecialchars($model_predictions['error']) ?>
+                            </div>
+                        <?php elseif (isset($model_predictions['inputs'])): ?>
+                            <?php
+                                $rawPreds = [];
+                                $queryPreds = [];
+                                $rawText = '';
+                                $queryText = '';
+                                $allModels = [];
+
+                                foreach ($model_predictions['inputs'] as $inputBlock) {
+                                    if (!isset($inputBlock['id'])) {
+                                        continue;
+                                    }
+                                    $preds = $inputBlock['predictions'] ?? [];
+                                    $allModels = array_unique(array_merge($allModels, array_keys($preds)));
+                                    if ($inputBlock['id'] === 'raw_payload') {
+                                        $rawPreds = $preds;
+                                        $rawText = $inputBlock['text'] ?? '';
+                                    } elseif ($inputBlock['id'] === 'full_query') {
+                                        $queryPreds = $preds;
+                                        $queryText = $inputBlock['text'] ?? '';
+                                    }
+                                }
+                            ?>
+                            <?php
+                                sort($allModels);
+                                foreach ($allModels as $gen):
+                            ?>
+                                <?php 
+                                    $raw = $rawPreds[$gen] ?? null;
+                                    $full = $queryPreds[$gen] ?? null;
+                                ?>
+                                <div class="model-card <?= ($raw && ($raw['detected'] ?? false)) || ($full && ($full['detected'] ?? false)) ? 'detected' : 'safe' ?>">
+                                    <div class="model-name">
+                                        <?= strtoupper($gen) ?> 
+                                        <small class="text-muted">(Generation <?= substr($gen, 3) ?>)</small>
+                                    </div>
+                                    
+                                    <?php if ($raw): ?>
+                                        <?php 
+                                            $rawDetected = $raw['detected'] ?? false;
+                                            $rawProb = round(($raw['probability'] ?? 0) * 100, 1);
+                                        ?>
+                                        <div class="model-result">
+                                            <span class="badge bg-secondary">Payload</span>
+                                            <span class="result-icon">
+                                                <?= $rawDetected ? '<i class="bi bi-shield-x text-danger"></i>' : '<i class="bi bi-shield-check text-success"></i>' ?>
+                                            </span>
+                                            <span class="result-text <?= $rawDetected ? 'text-danger' : 'text-success' ?>">
+                                                <?= $rawDetected ? 'SQLi Detected' : 'No Attack' ?>
+                                            </span>
+                                            <span class="badge bg-dark ms-auto"><?= $rawProb ?>%</span>
+                                        </div>
+                                        <small class="text-muted d-block mb-2"><code><?= htmlspecialchars($rawText) ?></code></small>
+                                        <div class="probability-bar mb-3">
+                                            <div class="probability-fill <?= ($raw['probability'] ?? 0) > 0.5 ? 'high' : 'low' ?>" 
+                                                 style="width: <?= $rawProb ?>%"></div>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <?php if ($full): ?>
+                                        <?php 
+                                            $fullDetected = $full['detected'] ?? false;
+                                            $fullProb = round(($full['probability'] ?? 0) * 100, 1);
+                                        ?>
+                                        <div class="model-result">
+                                            <span class="badge bg-secondary">Full Query</span>
+                                            <span class="result-icon">
+                                                <?= $fullDetected ? '<i class="bi bi-shield-x text-danger"></i>' : '<i class="bi bi-shield-check text-success"></i>' ?>
+                                            </span>
+                                            <span class="result-text <?= $fullDetected ? 'text-danger' : 'text-success' ?>">
+                                                <?= $fullDetected ? 'SQLi Detected' : 'No Attack' ?>
+                                            </span>
+                                            <span class="badge bg-dark ms-auto"><?= $fullProb ?>%</span>
+                                        </div>
+                                        <small class="text-muted d-block mb-2"><code><?= htmlspecialchars($queryText) ?></code></small>
+                                        <div class="probability-bar">
+                                            <div class="probability-fill <?= ($full['probability'] ?? 0) > 0.5 ? 'high' : 'low' ?>" 
+                                                 style="width: <?= $fullProb ?>%"></div>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
-                            <?php endif; ?>
-                        </div>
-                        
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                    
                         <!-- Executed SQL Query -->
                         <div class="sql-display">
                             <small class="text-muted d-block mb-2">Executed SQL Query:</small>
@@ -380,7 +487,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?php elseif ($login_success): ?>
                             <div class="login-result success">
                                 <h4><i class="bi bi-check-circle"></i> Login Successful!</h4>
-                                <p>You bypassed authentication<?= isset($model_predictions['predictions']) ? ' (but models knew!)' : '' ?></p>
+                                <p>You bypassed authentication<?= (isset($model_predictions['predictions']) || isset($model_predictions['inputs'])) ? ' (but models knew!)' : '' ?></p>
                                 
                                 <?php if ($user_data): ?>
                                     <div class="user-info">
